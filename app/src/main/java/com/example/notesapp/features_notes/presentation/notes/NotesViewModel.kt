@@ -1,14 +1,12 @@
 package com.example.notesapp.features_notes.presentation.notes
 
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.notesapp.features_notes.domain.model.Note
 import com.example.notesapp.features_notes.domain.use_case.NoteUseCase
+import com.example.notesapp.features_notes.domain.use_case.SearchNote
 import com.example.notesapp.features_notes.domain.util.NoteOrder
 import com.example.notesapp.features_notes.domain.util.OrderType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +28,7 @@ class MainViewModel @Inject constructor(
 
     private var getNotesJob: Job? = null
 
-
+    private val searchNote = SearchNote()
 
     init {
         getNotes(NoteOrder.Date(OrderType.Descending))
@@ -72,8 +70,38 @@ class MainViewModel @Inject constructor(
                 )
             }
 
+            is NotesEvent.SearchBar -> {
+                _state.value = state.value.copy(
+                    notes = searchNote.execute(
+                        notes = state.value.notes,
+                        query = state.value.searchText
+                    ),
+                    searchText = state.value.searchText,
+                    isSearchActive = !state.value.isSearchActive
+                )
+            }
+
         }
     }
+
+    fun onSearchTextChange(text: String) {
+        _state.value = state.value.copy(searchText = text)
+        if(text.isBlank()) {
+            getNotes(NoteOrder.Date(OrderType.Descending))
+        }
+    }
+
+    fun onToggleSearch() {
+        _state.value = state.value.copy(
+            isSearchActive = !state.value.isSearchActive
+        )
+        if(!state.value.isSearchActive) {
+            _state.value = state.value.copy(
+                searchText = ""
+            )
+        }
+    }
+
 
     // Here it will get the notes based on the order
     // Return the Flow is used to get the notes
